@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>កាលវិភាគចល័តឆ្លាតវៃ (គ្រប់គ្រងពេញមួយឆ្នាំ)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Kantumruy Pro', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .transition-all-300 {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .shimmer-loader {
+            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex justify-center items-center overflow-x-hidden antialiased">
+
+    <div class="w-full max-w-md h-screen md:h-[840px] md:rounded-[40px] md:shadow-2xl md:border-[8px] md:border-slate-800 bg-slate-900 flex flex-col relative overflow-hidden transition-all duration-300">
+        
+        <header class="px-6 pt-6 pb-4 bg-gradient-to-b from-slate-900 to-slate-900/90 sticky top-0 z-10 flex justify-between items-center border-b border-slate-800/60 backdrop-blur-md">
+            <div>
+                <span class="text-xs font-semibold tracking-wider text-indigo-400 uppercase">កាលវិភាគផ្ទាល់ខ្លួន</span>
+                <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="calendar" class="w-5 h-5 text-indigo-400"></i>
+                    Planner Pro
+                </h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="relative w-12 h-12 flex items-center justify-center">
+                    <svg class="w-full h-full transform -rotate-90">
+                        <circle cx="24" cy="24" r="20" class="stroke-slate-800" stroke-width="3" fill="transparent"/>
+                        <circle id="progress-circle" cx="24" cy="24" r="20" class="stroke-indigo-500 transition-all duration-500" stroke-width="3" fill="transparent" stroke-dasharray="125.6" stroke-dashoffset="125.6"/>
+                    </svg>
+                    <span id="progress-text" class="absolute text-[10px] font-bold text-slate-200">0%</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto px-4 py-4 pb-24 no-scrollbar">
+            
+            <div id="daily-tab-content" class="space-y-6">
+                <div>
+                    <div class="flex justify-between items-center mb-3 px-1">
+                        <h2 class="text-sm font-medium text-slate-400 flex items-center justify-between w-full">
+                            <span class="flex items-center gap-2">
+                                <span>សូមជ្រើសរើសថ្ងៃ</span>
+                                <button onclick="goToToday()" class="text-[11px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1 active:scale-95 transition-all">
+                                    <i data-lucide="map-pin" class="w-3 h-3"></i> ថ្ងៃនេះ
+                                </button>
+                            </span>
+                            <span class="text-xs bg-indigo-500/10 text-indigo-400 px-2.5 py-0.5 rounded-full" id="selected-day-badge">Day 8</span>
+                        </h2>
+                    </div>
+                    <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar" id="day-tabs-container">
+                        </div>
+                </div>
+
+                <div class="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-indigo-500/30 rounded-3xl p-4 flex items-center justify-between shadow-lg">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2.5 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 text-indigo-400">
+                            <i data-lucide="sparkles" class="w-5 h-5 animate-pulse"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-white">ជំនួយការរៀបចំកាលវិភាគ AI</h4>
+                            <p class="text-[10px] text-slate-300 mt-0.5">ស្វែងរកដំណោះស្រាយសម្រាប់ថ្ងៃមមាញឹក</p>
+                        </div>
+                    </div>
+                    <button onclick="optimizeScheduleWithAI()" class="text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-indigo-600/20 active:scale-95 transition-all">
+                        ✨ វិភាគដោយ AI
+                    </button>
+                </div>
+
+                <div id="warning-box" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3 flex items-start gap-3 transition-all duration-300">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
+                    <div>
+                        <h4 class="text-xs font-bold text-amber-400">ប្រយ័ត្ន៖ ម៉ោងជាន់គ្នា!</h4>
+                        <p class="text-[11px] text-slate-300 mt-1">មានការងារច្រើនជាងមួយត្រូវបានគ្រោងទុកក្នុងម៉ោងតែមួយនៅថ្ងៃនេះ។ សូមពិនិត្យឡើងវិញ ឬប្រើប្រាស់ AI ជួយសម្រួល។</p>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-3 px-1">
+                        <h3 class="text-sm font-medium text-slate-400 flex items-center gap-1.5">
+                            <i data-lucide="check-square" class="w-4 h-4 text-slate-400"></i>
+                            បញ្ជីការងារប្រចាំថ្ងៃ <span id="daily-date-label" class="text-xs text-indigo-400"></span>
+                        </h3>
+                        <button onclick="openAddTaskModal()" class="text-xs text-indigo-400 flex items-center gap-1 hover:text-indigo-300 transition-colors">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i> បន្ថែមការងារ
+                        </button>
+                    </div>
+                    <div class="space-y-3" id="tasks-list-container">
+                        </div>
+                </div>
+            </div>
+
+            <div id="projects-tab-content" class="hidden space-y-4">
+                <div class="flex justify-between items-center px-1 mb-2">
+                    <h2 class="text-sm font-medium text-slate-400">សង្ខេបគម្រោងការងារទាំងអស់</h2>
+                    <button onclick="generateProjectProgressWithAI()" class="text-xs font-semibold text-indigo-400 flex items-center gap-1.5 active:scale-95 transition-transform">
+                        ✨ AI វិភាគរួម
+                    </button>
+                </div>
+                <div class="space-y-3" id="projects-list-container">
+                    </div>
+            </div>
+
+            <div id="calendar-tab-content" class="hidden space-y-4">
+                <div class="flex justify-between items-center px-1">
+                    <h2 class="text-sm font-medium text-slate-400">ប្រតិទិនគ្រប់គ្រងរួម</h2>
+                    <div class="flex bg-slate-800 p-0.5 rounded-xl border border-slate-700">
+                        <button onclick="setCalendarView('month')" id="btn-view-month" class="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold transition-all">ខែ</button>
+                        <button onclick="setCalendarView('year')" id="btn-view-year" class="text-xs px-3 py-1.5 rounded-lg text-slate-400 transition-all">ឆ្នាំ</button>
+                    </div>
+                </div>
+
+                <div id="month-calendar-view" class="bg-slate-800/50 border border-slate-700/50 rounded-3xl p-4 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <button onclick="changeMonth(-1)" class="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors">
+                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                        </button>
+                        <span id="calendar-month-year-title" class="font-bold text-sm text-indigo-400">មិថុនា ២០២៦</span>
+                        <button onclick="changeMonth(1)" class="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors">
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-400 border-b border-slate-700/30 pb-2">
+                        <div>អា</div><div>ច</div><div>អ</div><div>ព</div><div>ព្រ</div><div>សុ</div><div>ស</div>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1.5 text-center text-xs" id="calendar-grid">
+                        </div>
+                </div>
+
+                <div id="year-calendar-view" class="hidden space-y-4">
+                    <div class="flex justify-between items-center px-2">
+                        <button onclick="changeYear(-1)" class="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors">
+                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                        </button>
+                        <span id="calendar-year-title" class="font-bold text-base text-indigo-400">ឆ្នាំ ២០២៦</span>
+                        <button onclick="changeYear(1)" class="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors">
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4" id="year-grids-container">
+                        </div>
+                </div>
+            </div>
+
+        </main>
+
+        <nav class="absolute bottom-0 left-0 right-0 h-16 bg-slate-900/90 border-t border-slate-800/80 backdrop-blur-md flex justify-around items-center px-4 z-10">
+            <button onclick="switchTab('daily')" id="nav-daily" class="flex flex-col items-center gap-1 text-indigo-400 transition-all duration-300">
+                <i data-lucide="clock" class="w-5 h-5"></i>
+                <span class="text-[10px] font-medium">ប្រចាំថ្ងៃ</span>
+            </button>
+            <button onclick="switchTab('projects')" id="nav-projects" class="flex flex-col items-center gap-1 text-slate-400 transition-all duration-300">
+                <i data-lucide="layers" class="w-5 h-5"></i>
+                <span class="text-[10px] font-medium">គម្រោង</span>
+            </button>
+            <button onclick="switchTab('calendar')" id="nav-calendar" class="flex flex-col items-center gap-1 text-slate-400 transition-all duration-300">
+                <i data-lucide="calendar-days" class="w-5 h-5"></i>
+                <span class="text-[10px] font-medium">ប្រតិទិន</span>
+            </button>
+        </nav>
+
+        <div id="add-task-modal" class="hidden absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end justify-center transition-opacity duration-300">
+            <div class="bg-slate-900 w-full rounded-t-[30px] border-t border-slate-800 p-6 space-y-4 max-w-md max-h-[90%] overflow-y-auto no-scrollbar transform translate-y-0 transition-transform duration-300">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2" id="modal-action-title">
+                        <i data-lucide="plus-circle" class="text-indigo-400 w-5 h-5" id="modal-action-icon"></i> បន្ថែមការងារថ្មី
+                    </h3>
+                    <button onclick="closeAddTaskModal()" class="p-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div class="space-y-3">
+                    <div class="relative">
+                        <label class="block text-xs text-slate-400 mb-1">ឈ្មោះការងារ/គម្រោង</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="new-task-title" placeholder="ឧ. រៀបចំ layout, design..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors">
+                            <button onclick="autoFillTaskWithAI()" class="bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-400 font-bold px-3 rounded-xl flex items-center justify-center shrink-0 active:scale-95 transition-all" title="បំពេញដោយ AI">
+                                ✨ AI បំពេញ
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">ម៉ោងចាប់ផ្តើម</label>
+                            <input type="text" id="new-task-start" placeholder="ឧ. ៩:០០" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">ម៉ោងបញ្ចប់</label>
+                            <input type="text" id="new-task-end" placeholder="ឧ. ១១:០០" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">ពេលវេលា</label>
+                            <select id="new-task-period" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors">
+                                <option value="ព្រឹក">🌅 ព្រឹក</option>
+                                <option value="ថ្ងៃត្រង់">☀️ ថ្ងៃត្រង់</option>
+                                <option value="រសៀល">🌇 រសៀល</option>
+                                <option value="ល្ងាច">🌆 ល្ងាច</option>
+                                <option value="យប់">🌙 យប់</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">ប្រភេទការងារ</label>
+                            <select id="new-task-category" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors">
+                                <option value="design">🎨 Design</option>
+                                <option value="video">🎬 Video</option>
+                                <option value="study">📚 សិក្សា (English)</option>
+                                <option value="other">⚙️ ផ្សេងៗ</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">កំណត់សម្រាប់ថ្ងៃ (កាលបរិច្ឆេទ)</label>
+                        <input type="date" id="new-task-date" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">កំណត់ត្រាវឌ្ឍនភាព (Progress Note)</label>
+                        <textarea id="new-task-note" rows="2" placeholder="សរសេរការកត់ចំណាំលម្អិត ឬ Progress ទីនេះ..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors no-scrollbar resize-none"></textarea>
+                    </div>
+                    <button onclick="saveCustomTask()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition-colors text-sm shadow-lg shadow-indigo-600/20" id="btn-submit-task">
+                        រក្សាទុកការងារ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="ai-assistant-modal" class="hidden absolute inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end justify-center transition-opacity duration-300">
+            <div class="bg-slate-900 w-full rounded-t-[34px] border-t border-slate-800 p-6 space-y-4 max-w-md max-h-[85%] flex flex-col transform translate-y-0 transition-transform duration-300">
+                <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+                    <div class="flex items-center gap-2">
+                        <div class="p-2 bg-indigo-500/10 rounded-xl text-indigo-400">
+                            <i data-lucide="sparkles" class="w-5 h-5 animate-spin-slow"></i>
+                        </div>
+                        <div>
+                            <h3 id="ai-modal-title" class="text-base font-bold text-white">របាយការណ៍ AI Optimizer</h3>
+                            <p class="text-[10px] text-slate-400">ជំនួយការបែងចែកពេលវេលាឆ្លាតវៃ</p>
+                        </div>
+                    </div>
+                    <button onclick="closeAIAssistantModal()" class="p-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div class="flex-1 overflow-y-auto no-scrollbar space-y-4 py-2" id="ai-modal-body">
+                    <div id="ai-loading-skeleton" class="hidden space-y-4">
+                        <div class="h-6 w-1/3 rounded-lg shimmer-loader"></div>
+                        <div class="h-20 w-full rounded-2xl shimmer-loader"></div>
+                        <div class="h-28 w-full rounded-2xl shimmer-loader"></div>
+                    </div>
+                    <div id="ai-output-container" class="space-y-4">
+                        <p class="text-sm text-slate-300 leading-relaxed" id="ai-response-text">
+                            គ្មានការណែនាំពី AI នៅឡើយទេ។ សូមចុចប៊ូតុងដើម្បីចាប់ផ្តើម។
+                        </p>
+                    </div>
+                </div>
+                <div id="ai-voice-panel" class="hidden bg-slate-800/40 border border-slate-700/50 rounded-2xl p-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="relative flex items-center justify-center">
+                            <span class="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-emerald-400 opacity-75 hidden" id="voice-ping"></span>
+                            <i data-lucide="volume-2" class="w-5 h-5 text-emerald-400" id="voice-icon"></i>
+                        </div>
+                        <div>
+                            <span class="text-[11px] font-bold text-emerald-400 uppercase">Gemini AI Voice</span>
+                            <p class="text-[10px] text-slate-300">ស្ដាប់ការណែនាំជាសំឡេងនិយាយ</p>
+                        </div>
+                    </div>
+                    <button id="btn-play-voice" onclick="playAIVoice()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors active:scale-95">
+                        🔊 ស្ដាប់មតិយោបល់ AI
+                    </button>
+                </div>
+                <div class="pt-2">
+                    <button onclick="closeAIAssistantModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-3 rounded-xl transition-colors text-sm">
+                        យល់ព្រម
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="custom-toast" class="fixed top-6 left-1/2 transform -translate-x-1/2 bg-slate-800/90 backdrop-blur border border-slate-700/50 text-white text-xs px-4 py-3 rounded-2xl shadow-xl z-50 flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300">
+        <i id="toast-icon" data-lucide="info" class="w-4 h-4 text-indigo-400"></i>
+        <span id="toast-message"></span>
+    </div>
+
+    <script>
+        const apiKey = ""; // runtime provided
+        const TODAY_STR = '2026-06-08'; 
+
+        const khmerDigits = ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'];
+        function toKhmerNum(num) {
+            return String(num).split('').map(char => !isNaN(parseInt(char)) ? khmerDigits[parseInt(char)] : char).join('');
+        }
+
+        const khmerMonths = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'];
+
+        function khmerToEnglishDigits(str) {
+            return str.split('').map(char => {
+                const idx = khmerDigits.indexOf(char);
+                return idx !== -1 ? idx : char;
+            }).join('');
+        }
+
+        function getTaskSortValue(task) {
+            const englishTime = khmerToEnglishDigits(task.start);
+            const parts = englishTime.split(':');
+            let hours = parseInt(parts[0]) || 0;
+            const minutes = parseInt(parts[1]) || 0;
+            const p = task.period;
+
+            if (p === 'ព្រឹក' && hours === 12) hours = 0;
+            else if ((p === 'ថ្ងៃត្រង់' || p === 'រសៀល' || p === 'ល្ងាច' || p === 'យប់') && hours < 12) hours += 12;
+
+            return (hours * 60) + minutes;
+        }
+
+        const initialTasks = [
+            { id: '1', title: 'Design Booth កោះពេជ្យ (ក្រសួងការងារ)', category: 'design', start: '២:០០', end: '៤:៣០', period: 'រសៀល', dates: ['2026-06-08', '2026-06-09', '2026-06-10', '2026-06-11'], note: 'រៀបចំ Layout និងពណ៌ឱ្យស្របតាមក្រសួង', completed: [] },
+            { id: '2', title: 'Design i-Stand Verify UN', category: 'design', start: '៩:០០', end: '១១:០០', period: 'ព្រឹក', dates: ['2026-06-08', '2026-06-09', '2026-06-10', '2026-06-11'], note: 'ផ្ទៀងផ្ទាត់ទំហំ Standard ជាមួយក្រុមការងារ', completed: [] },
+            { id: '3', title: 'Video 3D Bayon', category: 'video', start: '២:០០', end: '៣:០០', period: 'រសៀល', dates: ['2026-06-11', '2026-06-12', '2026-06-13', '2026-06-14'], note: 'Render សាកល្បងវគ្គដំបូង', completed: [] },
+            { id: '4', title: 'Backdrop Bayon', category: 'design', start: '៩:០០', end: '១១:០០', period: 'ព្រឹក', dates: ['2026-06-15', '2026-06-16', '2026-06-17', '2026-06-18'], note: '', completed: [] },
+            { id: '5', title: 'Video ទទួលពានរង្វាន់', category: 'video', start: '៩:០០', end: '១១:០០', period: 'ព្រឹក', dates: ['2026-06-11', '2026-06-12', '2026-06-13', '2026-06-14', '2026-06-15', '2026-06-16', '2026-06-17'], note: 'កាត់តក្បាលរឿង និងដាក់ភ្លេងកៅស៊ូ', completed: [] },
+            { id: '6', title: 'English Review ACE (Grammar + Writing)', category: 'study', start: '១:០០', end: '២:០០', period: 'ថ្ងៃត្រង់', dates: ['2026-06-08', '2026-06-09', '2026-06-10', '2026-06-11', '2026-06-12'], note: 'រំលឹកមេរៀនកាលទាក់ទងនឹង Essay writing', completed: [] },
+            { id: '7', title: 'English Review ACE (Grammar + Writing)', category: 'study', start: '៨:០០', end: '記錄', period: 'យប់', start: '៨:០០', end: '១០:០០', period: 'យប់', dates: ['2026-06-08', '2026-06-09', '2026-06-10', '2026-06-11', '2026-06-12'], note: 'ធ្វើលំហាត់ភាសា ACE បន្ថែម', completed: [] }
+        ];
+
+        let state = {
+            currentDate: '2026-06-08',
+            calendarYear: 2026,
+            calendarMonth: 5,
+            calendarViewMode: 'month',
+            tasks: JSON.parse(localStorage.getItem('app_tasks_v3')) || initialTasks,
+            activeTab: 'daily'
+        };
+
+        let editingTaskId = null;
+        let audioPlayer = null;
+        let currentAiResponseText = "";
+
+        function saveToLocalStorage() {
+            localStorage.setItem('app_tasks_v3', JSON.stringify(state.tasks));
+        }
+
+        const colors = {
+            design: { bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-400', indicator: 'bg-purple-500' },
+            video: { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-400', indicator: 'bg-blue-500' },
+            study: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-400', indicator: 'bg-emerald-500' },
+            other: { bg: 'bg-slate-500/10', border: 'border-slate-500/20', text: 'text-slate-400', indicator: 'bg-slate-500' }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderDaySelector();
+            renderTasks();
+            renderProjects();
+            renderCalendar();
+            updateProgressCircle();
+            lucide.createIcons();
+            document.getElementById('new-task-date').value = state.currentDate;
+        });
+
+        function renderDaySelector() {
+            const container = document.getElementById('day-tabs-container');
+            container.innerHTML = '';
+            const currentObj = new Date(state.currentDate);
+            const activeDayNum = currentObj.getDate();
+
+            for (let i = -5; i <= 5; i++) {
+                const targetDateObj = new Date(currentObj);
+                targetDateObj.setDate(currentObj.getDate() + i);
+                const dateStr = `${targetDateObj.getFullYear()}-${String(targetDateObj.getMonth() + 1).padStart(2, '0')}-${String(targetDateObj.getDate()).padStart(2, '0')}`;
+
+                const isActive = state.currentDate === dateStr;
+                const isToday = dateStr === TODAY_STR;
+                const hasOverlap = checkOverlapsForDate(dateStr);
+                
+                let isSelectedClass = 'bg-slate-800/80 text-slate-300 hover:bg-slate-700/80';
+                if (isActive) isSelectedClass = 'bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-600/30 ring-2 ring-indigo-400/50';
+                else if (isToday) isSelectedClass = 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/40 ring-1 ring-emerald-500/10';
+                
+                const weekdayNames = ['អា', 'ច', 'អ', 'ព', 'ព្រ', 'សុ', 'ស'];
+
+                container.innerHTML += `
+                    <button id="day-pill-${dateStr}" onclick="selectDate('${dateStr}')" class="px-4 py-2.5 rounded-2xl flex-shrink-0 flex flex-col items-center min-w-[62px] ${isSelectedClass} transition-all duration-300 relative">
+                        <span class="text-[10px] tracking-wide opacity-80 uppercase">${weekdayNames[targetDateObj.getDay()]}</span>
+                        <span class="text-sm mt-0.5">${toKhmerNum(targetDateObj.getDate())}</span>
+                        ${hasOverlap ? '<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500"></span>' : ''}
+                        ${isToday && !isActive ? '<span class="absolute bottom-1 w-1 h-1 rounded-full bg-emerald-400"></span>' : ''}
+                    </button>
+                `;
+            }
+
+            document.getElementById('selected-day-badge').textContent = currentObj.toLocaleDateString('km-KH', { day: 'numeric', month: 'long', year: 'numeric' });
+            document.getElementById('daily-date-label').textContent = `(ថ្ងៃទី ${toKhmerNum(activeDayNum)})`;
+
+            setTimeout(() => {
+                const activePill = document.getElementById(`day-pill-${state.currentDate}`);
+                if (activePill) activePill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }, 100);
+        }
+
+        function selectDate(dateString) {
+            state.currentDate = dateString;
+            const d = new Date(dateString);
+            state.calendarYear = d.getFullYear();
+            state.calendarMonth = d.getMonth();
+            renderDaySelector();
+            renderTasks();
+            updateProgressCircle();
+        }
+
+        function goToToday() {
+            selectDate(TODAY_STR);
+            showToast("បានត្រឡប់មកថ្ងៃនេះវិញហើយ!", "map-pin");
+        }
+
+        function checkOverlapsForDate(dateStr) {
+            const dateTasks = state.tasks.filter(t => t.dates.includes(dateStr));
+            const mornings = dateTasks.filter(t => t.period === 'ព្រឹក');
+            const afternoons = dateTasks.filter(t => t.period === 'រសៀល');
+            return (mornings.length > 1 || afternoons.length > 1);
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('tasks-list-container');
+            container.innerHTML = '';
+            const dateTasks = state.tasks.filter(t => t.dates.includes(state.currentDate));
+            
+            dateTasks.sort((a, b) => getTaskSortValue(a) - getTaskSortValue(b));
+            
+            const warningBox = document.getElementById('warning-box');
+            if (checkOverlapsForDate(state.currentDate)) warningBox.classList.remove('hidden');
+            else warningBox.classList.add('hidden');
+
+            if (dateTasks.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-16 text-center text-slate-500">
+                        <i data-lucide="calendar-check" class="w-12 h-12 text-slate-600 mb-3 animate-pulse"></i>
+                        <p class="text-sm">គ្មានកិច្ចការងារសម្រាប់ថ្ងៃនេះទេ!</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            dateTasks.forEach(task => {
+                const color = colors[task.category] || colors.other;
+                const isCompleted = task.completed.includes(state.currentDate);
+                const isOverlapping = dateTasks.filter(t => t.period === task.period).length > 1;
+
+                container.innerHTML += `
+                    <div class="p-4 rounded-3xl border ${color.border} ${color.bg} flex flex-col gap-2.5 transition-all-300 relative overflow-hidden group">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 ${color.indicator}"></div>
+                        
+                        <div class="flex items-start gap-3.5">
+                            <button onclick="toggleTaskCompletion('${task.id}', '${state.currentDate}')" class="mt-1 flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-300 ${isCompleted ? 'bg-indigo-600 border-indigo-600' : 'border-slate-600 hover:border-slate-400'}">
+                                ${isCompleted ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}
+                            </button>
+
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-[11px] font-semibold tracking-wide ${color.text} uppercase">
+                                        ${task.category === 'design' ? '🎨 Design' : task.category === 'video' ? '🎬 Video' : task.category === 'study' ? '📚 English Study' : '⚙️ ផ្សេងៗ'}
+                                    </span>
+                                    ${isOverlapping ? `<span class="text-[9px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><span class="w-1 h-1 rounded-full bg-amber-400 animate-pulse"></span>ជាន់ម៉ោងគ្នា</span>` : ''}
+                                </div>
+                                <h4 class="text-sm font-bold text-white mt-1 leading-snug ${isCompleted ? 'line-through text-slate-500' : ''}">
+                                    ${task.title}
+                                </h4>
+                                <div class="flex items-center gap-3 mt-1.5 text-slate-400 text-xs font-medium">
+                                    <span class="flex items-center gap-1">
+                                        <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-500"></i>
+                                        ម៉ោង ${toKhmerNum(task.start)} - ${toKhmerNum(task.end)} ${task.period}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-1 shrink-0 self-start">
+                                <button onclick="openEditTaskModal('${task.id}')" class="p-1.5 rounded-xl bg-slate-800/40 hover:bg-indigo-600/30 text-slate-400 hover:text-indigo-400 border border-transparent" title="កែសម្រួល">
+                                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <button onclick="deleteGeneralTask('${task.id}')" class="p-1.5 rounded-xl bg-slate-800/40 hover:bg-rose-600/30 text-slate-400 hover:text-rose-400 border border-transparent" title="លុប">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        ${task.note ? `
+                            <div class="mt-1 bg-slate-950/40 border border-slate-800/60 rounded-xl p-2.5 flex items-start gap-2 text-xs text-slate-300 leading-relaxed">
+                                <i data-lucide="sticky-note" class="w-3.5 h-3.5 text-indigo-400/70 shrink-0 mt-0.5"></i>
+                                <p class="break-words w-full">${task.note}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function toggleTaskCompletion(taskId, dateStr) {
+            state.tasks = state.tasks.map(task => {
+                if (task.id === taskId) {
+                    let completed = [...task.completed];
+                    if (completed.includes(dateStr)) completed = completed.filter(d => d !== dateStr);
+                    else completed.push(dateStr);
+                    return { ...task, completed };
+                }
+                return task;
+            });
+            saveToLocalStorage();
+            renderTasks();
+            updateProgressCircle();
+            renderProjects();
+        }
+
+        function updateProgressCircle() {
+            const dateTasks = state.tasks.filter(t => t.dates.includes(state.currentDate));
+            if (dateTasks.length === 0) { setProgress(100); return; }
+            const percentage = Math.round((dateTasks.filter(t => t.completed.includes(state.currentDate)).length / dateTasks.length) * 100);
+            setProgress(percentage);
+        }
+
+        function setProgress(percent) {
+            const circle = document.getElementById('progress-circle');
+            const text = document.getElementById('progress-text');
+            circle.style.strokeDashoffset = 125.6 - (percent / 100) * 125.6;
+            text.textContent = `${toKhmerNum(percent)}%`;
+        }
+
+        function renderProjects() {
+            const container = document.getElementById('projects-list-container');
+            container.innerHTML = '';
+            const distinctProjects = [];
+            const uniqueTitles = new Set();
+            
+            state.tasks.forEach(t => {
+                const titleKey = t.title.trim().toLowerCase();
+                if (!uniqueTitles.has(titleKey)) {
+                    uniqueTitles.add(titleKey);
+                    distinctProjects.push({ title: t.title, category: t.category, id_ref: t.id });
+                }
+            });
+
+            distinctProjects.forEach(proj => {
+                const matchingTasks = state.tasks.filter(t => t.title.toLowerCase().includes(proj.title.toLowerCase()) || t.id === proj.id_ref);
+                let totalSlots = 0, completedSlots = 0, durationDays = 'N/A';
+
+                if (matchingTasks.length > 0) {
+                    const allDaysSet = new Set();
+                    matchingTasks.forEach(t => t.dates.forEach(d => allDaysSet.add(d)));
+                    const daysArr = Array.from(allDaysSet).sort();
+                    if (daysArr.length > 0) {
+                        const startObj = new Date(daysArr[0]), endObj = new Date(daysArr[daysArr.length - 1]);
+                        durationDays = `ថ្ងៃទី ${toKhmerNum(startObj.getDate())} ${khmerMonths[startObj.getMonth()]} - ថ្ងៃទី ${toKhmerNum(endObj.getDate())} ${khmerMonths[endObj.getMonth()]} (${toKhmerNum(daysArr.length)} ថ្ងៃ)`;
+                    }
+                    matchingTasks.forEach(t => { totalSlots += t.dates.length; completedSlots += t.completed.length; });
+                }
+
+                const progressPercent = totalSlots > 0 ? Math.round((completedSlots / totalSlots) * 100) : 0;
+                const color = colors[proj.category] || colors.other;
+
+                container.innerHTML += `
+                    <div class="p-4 bg-slate-800/40 border border-slate-700/40 rounded-3xl space-y-3">
+                        <div>
+                            <span class="text-[10px] font-bold ${color.text} uppercase">${proj.category}</span>
+                            <h3 class="font-bold text-white text-sm leading-snug mt-1">${proj.title}</h3>
+                        </div>
+                        <span class="inline-block text-[10px] bg-slate-800 text-slate-300 px-2.5 py-1 rounded-xl">${durationDays}</span>
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-400">វឌ្ឍនភាពការងារ</span>
+                                <span class="font-semibold text-indigo-400">${toKhmerNum(completedSlots)}/${toKhmerNum(totalSlots)} ថ្ងៃ (${toKhmerNum(progressPercent)}%)</span>
+                            </div>
+                            <div class="w-full bg-slate-700/50 rounded-full h-2 overflow-hidden">
+                                <div class="${color.indicator} h-full transition-all duration-500" style="width: ${progressPercent}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function setCalendarView(mode) {
+            state.calendarViewMode = mode;
+            const btnMonth = document.getElementById('btn-view-month'), btnYear = document.getElementById('btn-view-year');
+            const viewMonth = document.getElementById('month-calendar-view'), viewYear = document.getElementById('year-calendar-view');
+
+            if (mode === 'month') {
+                btnMonth.className = "text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold transition-all";
+                btnYear.className = "text-xs px-3 py-1.5 rounded-lg text-slate-400 transition-all";
+                viewMonth.classList.remove('hidden'); viewYear.classList.add('hidden');
+                renderCalendar();
+            } else {
+                btnMonth.className = "text-xs px-3 py-1.5 rounded-lg text-slate-400 transition-all";
+                btnYear.className = "text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold transition-all";
+                viewMonth.classList.add('hidden'); viewYear.classList.remove('hidden');
+                renderYearCalendar();
+            }
+        }
+
+        function changeMonth(direction) {
+            state.calendarMonth += direction;
+            if (state.calendarMonth < 0) { state.calendarMonth = 11; state.calendarYear -= 1; }
+            else if (state.calendarMonth > 11) { state.calendarMonth = 0; state.calendarYear += 1; }
+            renderCalendar();
+        }
+
+        function changeYear(direction) {
+            state.calendarYear += direction;
+            renderYearCalendar();
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+            document.getElementById('calendar-month-year-title').textContent = `${khmerMonths[state.calendarMonth]} ${toKhmerNum(state.calendarYear)}`;
+
+            const firstDayIndex = new Date(state.calendarYear, state.calendarMonth, 1).getDay();
+            const totalDays = new Date(state.calendarYear, state.calendarMonth + 1, 0).getDate();
+            const prevMonthTotalDays = new Date(state.calendarYear, state.calendarMonth, 0).getDate();
+
+            for (let i = firstDayIndex - 1; i >= 0; i--) {
+                grid.innerHTML += `<div class="p-2 text-slate-700 min-h-[48px] flex items-center justify-center text-xs">${toKhmerNum(prevMonthTotalDays - i)}</div>`;
+            }
+
+            for (let day = 1; day <= totalDays; day++) {
+                const dateStr = `${state.calendarYear}-${String(state.calendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isActiveDate = state.currentDate === dateStr, isToday = dateStr === TODAY_STR;
+                const dayTasks = state.tasks.filter(t => t.dates.includes(dateStr));
+
+                let dayBg = 'hover:bg-slate-800 text-slate-200', dayBorder = 'border-transparent';
+                if (isActiveDate) { dayBg = 'bg-indigo-600 text-white font-bold shadow-md'; dayBorder = 'border-indigo-400'; }
+                else if (isToday) { dayBg = 'bg-emerald-950/40 text-emerald-400 font-bold'; dayBorder = 'border-emerald-500/50 ring-1'; }
+                else if (dayTasks.length > 0) { dayBg = 'bg-slate-800/80 text-white hover:bg-slate-700'; dayBorder = 'border-slate-700/60'; }
+
+                let indicators = '';
+                if (dayTasks.length > 0) {
+                    indicators = '<div class="flex justify-center gap-0.5 mt-1">';
+                    Array.from(new Set(dayTasks.map(t => t.category))).forEach(cat => {
+                        indicators += `<span class="w-1 h-1 rounded-full ${(colors[cat] || colors.other).indicator}"></span>`;
+                    });
+                    indicators += '</div>';
+                }
+
+                grid.innerHTML += `
+                    <button onclick="selectDate('${dateStr}'); switchTab('daily');" class="p-1.5 border rounded-xl flex flex-col justify-between items-center min-h-[50px] transition-all duration-200 ${dayBg} ${dayBorder}">
+                        <span class="text-xs font-semibold">${toKhmerNum(day)}</span>
+                        ${indicators}
+                    </button>
+                `;
+            }
+        }
+
+        function renderYearCalendar() {
+            const container = document.getElementById('year-grids-container');
+            container.innerHTML = '';
+            document.getElementById('calendar-year-title').textContent = `ឆ្នាំ ${toKhmerNum(state.calendarYear)}`;
+
+            for (let m = 0; m < 12; m++) {
+                const firstDayIndex = new Date(state.calendarYear, m, 1).getDay();
+                const totalDays = new Date(state.calendarYear, m + 1, 0).getDate();
+                let daysMarkup = '';
+
+                for (let s = 0; s < firstDayIndex; s++) daysMarkup += `<div></div>`;
+
+                for (let d = 1; d <= totalDays; d++) {
+                    const dateStr = `${state.calendarYear}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const dateTasks = state.tasks.filter(t => t.dates.includes(dateStr));
+                    const isSelected = state.currentDate === dateStr, isToday = dateStr === TODAY_STR;
+
+                    let bgClass = 'text-slate-400 hover:bg-slate-700/50 rounded-full';
+                    if (isSelected) bgClass = 'bg-indigo-600 text-white rounded-full font-bold';
+                    else if (isToday) bgClass = 'bg-emerald-950/60 text-emerald-400 border border-emerald-500/40 rounded-full font-bold';
+                    else if (dateTasks.length > 0) bgClass = 'bg-indigo-500/30 text-indigo-300 rounded-full font-bold';
+
+                    daysMarkup += `
+                        <button onclick="event.stopPropagation(); selectDate('${dateStr}'); switchTab('daily');" class="text-[9px] flex items-center justify-center p-0.5 w-5 h-5 transition-all ${bgClass}">
+                            ${toKhmerNum(d)}
+                        </button>
+                    `;
+                }
+
+                container.innerHTML += `
+                    <div onclick="state.calendarMonth = ${m}; setCalendarView('month');" class="bg-slate-800/40 border border-slate-700/40 p-2.5 rounded-2xl cursor-pointer hover:border-indigo-500/40 transition-colors">
+                        <h4 class="text-xs font-bold text-slate-300 border-b border-slate-700 pb-1">${khmerMonths[m]}</h4>
+                        <div class="grid grid-cols-7 gap-0.5 text-center text-[8px] text-slate-500 font-bold mb-1">
+                            <div>អា</div><div>ច</div><div>អ</div><div>ព</div><div>ព្រ</div><div>សុ</div><div>ស</div>
+                        </div>
+                        <div class="grid grid-cols-7 gap-0.5 text-center justify-items-center">${daysMarkup}</div>
+                    </div>
+                `;
+            }
+        }
+
+        function switchTab(tabId) {
+            state.activeTab = tabId;
+            document.getElementById('daily-tab-content').classList.add('hidden');
+            document.getElementById('projects-tab-content').classList.add('hidden');
+            document.getElementById('calendar-tab-content').classList.add('hidden');
+            document.getElementById(`${tabId}-tab-content`).classList.remove('hidden');
+
+            ['daily', 'projects', 'calendar'].forEach(t => {
+                const el = document.getElementById(`nav-${t}`);
+                if (t === tabId) el.classList.add('text-indigo-400'), el.classList.remove('text-slate-400');
+                else el.classList.remove('text-indigo-400'), el.classList.add('text-slate-400');
+            });
+
+            if (tabId === 'calendar') {
+                if (state.calendarViewMode === 'month') renderCalendar();
+                else renderYearCalendar();
+            } else if (tabId === 'projects') renderProjects();
+            else if (tabId === 'daily') { renderDaySelector(); renderTasks(); }
+        }
+
+        function openAddTaskModal() {
+            editingTaskId = null;
+            document.getElementById('modal-action-title').innerHTML = `<i data-lucide="plus-circle" class="text-indigo-400 w-5 h-5"></i> បន្ថែមការងារថ្មី`;
+            document.getElementById('btn-submit-task').textContent = "រក្សាទុកការងារ";
+            document.getElementById('new-task-title').value = '';
+            document.getElementById('new-task-start').value = '';
+            document.getElementById('new-task-end').value = '';
+            document.getElementById('new-task-period').value = 'ព្រឹក';
+            document.getElementById('new-task-category').value = 'design';
+            document.getElementById('new-task-note').value = '';
+            document.getElementById('new-task-date').value = state.currentDate;
+            lucide.createIcons();
+            document.getElementById('add-task-modal').classList.remove('hidden');
+        }
+
+        function openEditTaskModal(taskId) {
+            editingTaskId = taskId;
+            const task = state.tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            document.getElementById('modal-action-title').innerHTML = `<i data-lucide="edit-3" class="text-emerald-400 w-5 h-5"></i> កែសម្រួលការងារ`;
+            document.getElementById('btn-submit-task').textContent = "រក្សាទុកការផ្លាស់ប្តូរ";
+            document.getElementById('new-task-title').value = task.title;
+            document.getElementById('new-task-start').value = task.start;
+            document.getElementById('new-task-end').value = task.end;
+            document.getElementById('new-task-period').value = task.period || 'ព្រឹក';
+            document.getElementById('new-task-category').value = task.category;
+            document.getElementById('new-task-note').value = task.note || '';
+            document.getElementById('new-task-date').value = task.dates[0] || state.currentDate;
+
+            lucide.createIcons();
+            document.getElementById('add-task-modal').classList.remove('hidden');
+        }
+
+        function closeAddTaskModal() {
+            document.getElementById('add-task-modal').classList.add('hidden');
+            editingTaskId = null;
+        }
+
+        function saveCustomTask() {
+            const title = document.getElementById('new-task-title').value.trim();
+            const start = document.getElementById('new-task-start').value.trim();
+            const end = document.getElementById('new-task-end').value.trim();
+            const period = document.getElementById('new-task-period').value;
+            const category = document.getElementById('new-task-category').value;
+            const targetDate = document.getElementById('new-task-date').value;
+            const note = document.getElementById('new-task-note').value.trim();
+
+            if (!title || !start || !end || !targetDate) {
+                showToast("សូមបំពេញចន្លោះទំនេរទាំងអស់!", "alert-triangle");
+                return;
+            }
+
+            if (editingTaskId) {
+                state.tasks = state.tasks.map(task => {
+                    if (task.id === editingTaskId) {
+                        return { ...task, title, start, end, period, category, note, dates: task.dates[0] !== targetDate ? [targetDate] : task.dates };
+                    }
+                    return task;
+                });
+                showToast("បានកែសម្រួលព័ត៌មានការងាររួចរាល់!", "check-circle");
+            } else {
+                state.tasks.push({ id: Date.now().toString(), title, category, start, end, period, dates: [targetDate], note, completed: [], isCustom: true });
+                showToast("បានបង្កើតការងារថ្មីដោយជោគជ័យ!", "check-circle");
+            }
+
+            saveToLocalStorage();
+            closeAddTaskModal();
+            selectDate(targetDate);
+            renderProjects();
+            renderCalendar();
+        }
+
+        function deleteGeneralTask(id) {
+            state.tasks = state.tasks.filter(t => t.id !== id);
+            saveToLocalStorage();
+            renderTasks();
+            updateProgressCircle();
+            renderProjects();
+            renderCalendar();
+            showToast("បានលុបការងារនេះរួចរាល់!", "trash-2");
+        }
+
+        function showToast(message, iconName = "info") {
+            const toast = document.getElementById('custom-toast');
+            document.getElementById('toast-message').textContent = message;
+            document.getElementById('toast-icon').setAttribute('data-lucide', iconName);
+            lucide.createIcons();
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+            setTimeout(() => { toast.classList.add('opacity-0', 'pointer-events-none'); }, 3000);
+        }
+
+        async function fetchWithRetry(url, options, retries = 5, delay = 1000) {
+            try {
+                const res = await fetch(url, options);
+                if (!res.ok) throw new Error(`Error status: ${res.status}`);
+                return await res.json();
+            } catch (err) {
+                if (retries > 1) {
+                    await new Promise(r => setTimeout(r, delay));
+                    return fetchWithRetry(url, options, retries - 1, delay * 2);
+                } else throw err;
+            }
+        }
+
+        async function optimizeScheduleWithAI() {
+            openAIAssistantModal("✨ វិភាគ និងរៀបចំដោយ AI", true);
+            const dateTasks = state.tasks.filter(t => t.dates.includes(state.currentDate));
+            dateTasks.sort((a, b) => getTaskSortValue(a) - getTaskSortValue(b));
+            
+            const tasksSummary = dateTasks.map(t => `- ${t.title} (ម៉ោង ${t.start} - ${t.end} ${t.period}) [កំណត់ត្រា: ${t.note || 'គ្មាន'}]`).join('\n');
+            const systemPrompt = `You are an expert productivity coach. Analyze task lists, overlaps, and clear sub-notes in Khmer using proper semantic HTML structure like list elements. Keep the tone inspiring and professional.`;
+            const userQuery = `កាលវិភាគថ្ងៃទី ${state.currentDate}៖\n${tasksSummary || 'គ្មានការងារ'}\n\nសូមជួយវាយតម្លៃ។`;
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            try {
+                const data = await fetchWithRetry(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: userQuery }] }], systemInstruction: { parts: [{ text: systemPrompt }] } }) });
+                const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "មិនអាចវិភាគបានទេ។";
+                currentAiResponseText = rawText;
+                document.getElementById('ai-loading-skeleton').classList.add('hidden');
+                document.getElementById('ai-response-text').innerHTML = formatAIResponseToHTML(rawText);
+                document.getElementById('ai-voice-panel').classList.remove('hidden');
+            } catch (e) {
+                document.getElementById('ai-loading-skeleton').classList.add('hidden');
+                document.getElementById('ai-response-text').textContent = "ការភ្ជាប់ទៅ AI បរាជ័យ។";
+            }
+        }
+
+        async function generateProjectProgressWithAI() {
+            openAIAssistantModal("✨ AI វិភាគវឌ្ឍនភាពគម្រោង", true);
+            let summaryText = "";
+            state.tasks.forEach(t => { summaryText += `- ${t.title}: បញ្ចប់ ${t.completed.length}/${t.dates.length} ថ្ងៃ [Note: ${t.note || 'គ្មាន'}]\n`; });
+
+            const systemPrompt = `You are a creative director. Review project updates and sub-notes in Khmer with standard HTML layouts. High motivation text.`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            try {
+                const data = await fetchWithRetry(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: `ស្ថានភាពការងារ៖\n${summaryText}` }] }], systemInstruction: { parts: [{ text: systemPrompt }] } }) });
+                const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "មិនអាចវិភាគបានទេ។";
+                currentAiResponseText = rawText;
+                document.getElementById('ai-loading-skeleton').classList.add('hidden');
+                document.getElementById('ai-response-text').innerHTML = formatAIResponseToHTML(rawText);
+                document.getElementById('ai-voice-panel').classList.remove('hidden');
+            } catch (e) {
+                document.getElementById('ai-loading-skeleton').classList.add('hidden');
+                document.getElementById('ai-response-text').textContent = "ការភ្ជាប់ទៅ AI មានបញ្ហា។";
+            }
+        }
+
+        async function autoFillTaskWithAI() {
+            const title = document.getElementById('new-task-title').value.trim();
+            if (!title) { showToast("សូមសរសេរឈ្មោះការងារសិន!", "alert-triangle"); return; }
+            showToast("AI កំពុងវិភាគ...", "sparkles");
+
+            const systemPrompt = `Return valid JSON object matching the theme: {"start": "h:MM Khmer standard", "end": "h:MM Khmer standard", "category": "design/video/study/other", "period": "ព្រឹក/ថ្ងៃត្រង់/រសៀល/ល្ងាច/យប់"}. No tags around json.`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            try {
+                const data = await fetchWithRetry(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: `ការងារ: "${title}"` }] }], systemInstruction: { parts: [{ text: systemPrompt }] }, generationConfig: { responseMimeType: "application/json" } }) });
+                const result = JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text);
+                if (result) {
+                    document.getElementById('new-task-start').value = result.start || "៩:០០";
+                    document.getElementById('new-task-end').value = result.end || "១១:០០";
+                    document.getElementById('new-task-period').value = result.period || "ព្រឹក";
+                    document.getElementById('new-task-category').value = result.category || "other";
+                    showToast("បានបំពេញដោយ AI!", "sparkles");
+                }
+            } catch (e) { showToast("AI ពេញបរាជ័យ!", "x-circle"); }
+        }
+
+        async function playAIVoice() {
+            if (!currentAiResponseText) return;
+            if (audioPlayer) { audioPlayer.pause(); audioPlayer = null; setVoicePlayingState(false); return; }
+
+            setVoicePlayingState(true, "កំពុងដំណើរការ...");
+            const cleanText = currentAiResponseText.replace(/<\/?[^>]+(>|$)/g, "").substring(0, 400);
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+            try {
+                const data = await fetchWithRetry(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: `Say warmly in Khmer: ${cleanText}` }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } } } }, model: "gemini-2.5-flash-preview-tts" })
+                });
+                const base64Audio = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+                if (base64Audio) {
+                    audioPlayer = new Audio(pcmToWav(base64Audio, 24000));
+                    audioPlayer.play();
+                    setVoicePlayingState(true, "កំពុងនិយាយ...");
+                    audioPlayer.onended = () => { setVoicePlayingState(false); audioPlayer = null; };
+                }
+            } catch (e) { showToast("សំឡេងបរាជ័យ!", "volume-x"); setVoicePlayingState(false); }
+        }
+
+        function pcmToWav(pcmBase64, sampleRate = 24000) {
+            const binaryString = atob(pcmBase64), len = binaryString.length, bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+            const view = new DataView(new ArrayBuffer(44));
+            
+            const writeStr = (offset, s) => { for (let i=0; i<s.length; i++) view.setUint8(offset + i, s.charCodeAt(i)); };
+            writeStr(0, 'RIFF'); view.setUint32(4, 36 + len, true); writeStr(8, 'WAVE'); writeStr(12, 'fmt ');
+            view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true); writeStr(36, 'data'); view.setUint32(40, len, true);
+            
+            return URL.createObjectURL(new Blob([view.buffer, bytes.buffer], { type: 'audio/wav' }));
+        }
+
+        function setVoicePlayingState(isPlaying, text) {
+            const btn = document.getElementById('btn-play-voice'), ping = document.getElementById('voice-ping'), icon = document.getElementById('voice-icon');
+            if (isPlaying) {
+                btn.innerHTML = `🛑 បញ្ឈប់សំឡេង`; btn.className = "text-xs bg-rose-600 hover:bg-rose-500 text-white font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors active:scale-95";
+                ping.classList.remove('hidden'); icon.classList.add('animate-bounce');
+            } else {
+                btn.innerHTML = `🔊 ស្ដាប់មតិយោបល់ AI`; btn.className = "text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors active:scale-95";
+                ping.classList.add('hidden'); icon.classList.remove('animate-bounce');
+            }
+        }
+
+        function formatAIResponseToHTML(text) {
+            return text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-bold">$1</strong>').replace(/\* (.*?)\n/g, '<li class="ml-4 list-disc text-slate-300">$1</li>').replace(/### (.*?)\n/g, '<h4 class="text-sm font-bold text-indigo-400 mt-3">$1</h4>').replace(/## (.*?)\n/g, '<h3 class="text-base font-bold text-white mt-4">$1</h3>').replace(/\n/g, '<br>');
+        }
+
+        function openAIAssistantModal(title, isLoading) {
+            document.getElementById('ai-modal-title').textContent = title;
+            document.getElementById('ai-voice-panel').classList.add('hidden');
+            if (isLoading) { document.getElementById('ai-loading-skeleton').classList.remove('hidden'); document.getElementById('ai-output-container').classList.add('hidden'); }
+            else { document.getElementById('ai-loading-skeleton').classList.add('hidden'); document.getElementById('ai-output-container').classList.remove('hidden'); }
+            document.getElementById('ai-assistant-modal').classList.remove('hidden');
+        }
+
+        function closeAIAssistantModal() {
+            document.getElementById('ai-assistant-modal').classList.add('hidden');
+            if (audioPlayer) { audioPlayer.pause(); audioPlayer = null; }
+            setVoicePlayingState(false);
+        }
+    </script>
+</body>
+</html>
